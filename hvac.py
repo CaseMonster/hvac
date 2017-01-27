@@ -35,7 +35,7 @@ GPIO.setup(PIN_HEAT, GPIO.OUT)
 #===========================================================================================
 #definitions
 
-COOLDOWN_TIMEOUT = 360
+COOLDOWN_TIMEOUT = 500
 TEMP_THRESHOLD = 2.5
 TEMP_SETTING = 72
 TEMP_STATUS = "idle"
@@ -109,16 +109,16 @@ def SetStatusHVAC():
         return "idle"
 
 def TurnOnCool():
-	GPIO.output(PIN_COOL, GPIO.LOW)
+	GPIO.output(PIN_COOL, GPIO.HIGH)
 	GPIO.output(PIN_COOL_LED, GPIO.HIGH)
 
 def TurnOnHeat():
-	GPIO.output(PIN_HEAT, GPIO.LOW)
+	GPIO.output(PIN_HEAT, GPIO.HIGH)
 	GPIO.output(PIN_HEAT_LED, GPIO.HIGH)
 
 def TurnOffEverything():
-	GPIO.output(PIN_HEAT, GPIO.HIGH)
-	GPIO.output(PIN_COOL, GPIO.HIGH)
+	GPIO.output(PIN_HEAT, GPIO.LOW)
+	GPIO.output(PIN_COOL, GPIO.LOW)
 	GPIO.output(PIN_HEAT_LED, GPIO.LOW)
 	GPIO.output(PIN_COOL_LED, GPIO.LOW)
 
@@ -134,15 +134,14 @@ def Heartbeat():
                 try:
                         TWEET.update_status(status = s)
                 except:
-                        print(sys.exc_info()[0])
+                        print("********** TWEET FAILED **********")
         temp = not HEARTBEAT
         GPIO.output(PIN_STATUS_LED, HEARTBEAT)
         return temp
 
 def Hello():
-        s = str(datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S') + " \t " + "********** HVAC STARTED **********")
-        print(s)
-        TWEET.update_status(status = s)
+        print("********** HVAC STARTED **********")
+        TWEET.update_status(status = "********** HVAC STARTED **********")
 
 #===========================================================================================
 #main
