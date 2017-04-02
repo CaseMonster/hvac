@@ -5,6 +5,7 @@ import RPi.GPIO as GPIO
 import time
 import datetime
 import os
+import serial
 from twython import Twython
 
 CONSUMER_KEY = 'CRTXD3XeoPoULULtyjc9Vt2Oy'
@@ -16,6 +17,8 @@ TWEET = Twython(CONSUMER_KEY,CONSUMER_SECRET,ACCESS_KEY,ACCESS_SECRET)
 os.system("modprobe w1-gpio")
 os.system("modprobe w1-therm")
 temp_sensor = "/sys/bus/w1/devices/28-0115722a0bff/w1_slave"
+
+ser = serial.Serial(port='/dev/ttyAMA0', baudrate = 9600, parity=serial.PARITY_NONE, stopbits=serial.STOPBITS_ONE, bytesize=serial.EIGHTBITS, timeout=1)
 
 #===========================================================================================
 #pin setup
@@ -35,14 +38,18 @@ GPIO.setup(PIN_HEAT, GPIO.OUT)
 #===========================================================================================
 #definitions
 
-COOLDOWN_TIMEOUT = 500
-TEMP_THRESHOLD = 2.5
-TEMP_SETTING = 72
-TEMP_STATUS = "idle"
-HVAC_STATUS = "idle"
-OLD_STATUS = "idle"
+STATUS_TEMP = "idle"
+STATUS_HVAC = "idle"
+STATUS_OLD = "idle"
+
+HVAC_COOL = "on"
+HVAC_HEAT = "on"
 
 TEMP = 70
+TEMP_SETTING_COOL = 74
+TEMP_SETTING_HEAT = 69
+
+COOLDOWN_TIMEOUT = 500
 TIMER = 0
 RUNTIME_MAX = 720
 RUNTIME_MIN = 300
@@ -79,42 +86,46 @@ def SetStatusTemp():
 def SetStatusHVAC():
         if((TEMP > ERROR_TEMP_MAX) or (TEMP < ERROR_TEMP_MIN)):
                 return "error"
-        if(HVAC_STATUS == "cool" and TEMP_STATUS == "heat"):
+        if(STATUS_HVAC == "cool" and STATUS_TEMP == "heat"):
                 return "error"
-        if(HVAC_STATUS == "heat" and TEMP_STATUS == "cool"):
+        if(STATUS_HVAC == "heat" and STATUS_TEMP == "cool"):
                 return "error"
-        if(HVAC_STATUS == "cooldown"):
+        if(STATUS_HVAC == "cooldown"):
                 if(TIMER < COOLDOWN_TIMEOUT):
                         return "cooldown"
-        if(HVAC_STATUS == "cool"):
+        if(STATUS_HVAC == "cool"):
+                if(HVAC_COOL == "off"):
+                        return "idle"
                 if(TIMER < RUNTIME_MIN):
                         return "cool"
                 if(TIMER > RUNTIME_MAX):
                         return "cooldown"
-                if(TEMP > (TEMP_SETTING + TEMP_THRESHOLD / 2)):
+                if(TEMP > TEMP_SETTING_COOL):
                         return "cool"
                 return "cooldown"
-        if(HVAC_STATUS == "heat"):
+        if(STATUS_HVAC == "heat"):
+                if(HVAC_HEAT == "off"):
+                        return "idle"
                 if(TIMER < RUNTIME_MIN):
                         return "heat"
                 if(TIMER > RUNTIME_MAX):
                         return "cooldown"
-                if(TEMP < (TEMP_SETTING - TEMP_THRESHOLD / 2)):
+                if(TEMP < TEMP_SETTING_HEAT):
                         return "heat"
                 return "cooldown"
-        if(TEMP_STATUS == "cool"):
+        if(STATUS_TEMP == "cool"):
                 return "cool"
-        if(TEMP_STATUS == "heat"):
+        if(STATUS_TEMP == "heat"):
                 return "heat"                
         return "idle"
 
 def TurnOnCool():
-	GPIO.output(PIN_COOL, GPIO.HIGH)
-	GPIO.output(PIN_COOL_LED, GPIO.HIGH)
+        GPIO.output(PIN_COOL, GPIO.HIGH)
+        GPIO.output(PIN_COOL_LED, GPIO.HIGH)
 
 def TurnOnHeat():
-	GPIO.output(PIN_HEAT, GPIO.HIGH)
-	GPIO.output(PIN_HEAT_LED, GPIO.HIGH)
+        GPIO.output(PIN_HEAT, GPIO.HIGH)
+        GPIO.output(PIN_HEAT_LED, GPIO.HIGH)
 
 def TurnOffEverything():
 	GPIO.output(PIN_HEAT, GPIO.LOW)
@@ -148,6 +159,14 @@ def Hello():
         except:
                 print(t + " ********** TWEET FAILED **********")
 
+def SerialReceive():
+        return ser.readline()   
+
+def SerialSend():
+        #temp, temp heat, temp cold, heat on/off, cool on/off
+        string = str(TEMP + " " + TEMP_SETTING_HEAT+ " " + TEMP_SETTING_COOL+ " " + HVAC_HEAT+ " " + HVAC_COOL)
+        ser.write(string)
+
 #===========================================================================================
 #main
 
@@ -155,27 +174,46 @@ Hello()
 TurnOffEverything()
 
 while True:
+        #pre
         HEARTBEAT = Heartbeat()
-        
 	TEMP = CheckTemp()
-	#getSetting()
-	
-        TEMP_STATUS = SetStatusTemp()
-        HVAC_STATUS = SetStatusHVAC()
-        
-        if(HVAC_STATUS == "cool"):
+
+	#check temp/communicate to head unit
+	SerialReceive()
+	if(string == "TEMP_HEAT_UP"):
+                TEMP_SETTING_UPPER = TEMP_SETTING_HEAT + 1
+        if(string == "TEMP_HEAT_DN"):
+                TEMP_SETTING_UPPER = TEMP_SETTING_HEAT - 1
+        if(string == "TEMP_COOL_UP"):
+                TEMP_SETTING_UPPER = TEMP_SETTING_COOL + 1
+        if(string == "TEMP_COOL_DN"):
+                TEMP_SETTING_UPPER = TEMP_SETTING_COOL - 1
+        if(string == "TEMP_HEAT_ON"):
+                HVAC_HEAT = "on"
+        if(string == "TEMP_HEAT_OFF"):
+                HVAC_HEAT = "off"
+        if(string == "TEMP_COOL_ON"):
+                HVAC_COOL = "on"
+        if(string == "TEMP_COOL_OFF"):
+                HVAC_COOL = "off"
+
+	#check status/communicate to hvac
+        STATUS_TEMP = SetStatusTemp()
+        STATUS_HVAC = SetStatusHVAC()
+        if(STATUS_HVAC == "cool"):
                 TurnOnCool()
-        if(HVAC_STATUS == "heat"):
+        if(STATUS_HVAC == "heat"):
                 TurnOnHeat()
-        if(HVAC_STATUS == "cooldown"):
+        if(STATUS_HVAC == "cooldown"):
                 TurnOffEverything()
-	if(HVAC_STATUS == "idle"):
+	if(STATUS_HVAC == "idle"):
                 TurnOffEverything()
-        if(HVAC_STATUS == "error"):
+        if(STATUS_HVAC == "error"):
                 TurnOffEverything()
-                
+
+        #post
+        SerialSend()
 	time.sleep(.3)
-	
 	TIMER = TIMER + 1
 	TIMER = CheckTimer()
-	OLD_STATUS = HVAC_STATUS
+	STATUS_OLD = STATUS_HVAC
