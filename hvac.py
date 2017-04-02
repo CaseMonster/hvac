@@ -66,7 +66,7 @@ def CheckTemp():
 		temp_string = lines[1].strip()[temp_output+2:]
 		temp_c = float(temp_string) / 1000.0
 		temp_f = temp_c * 9.0 / 5.0 + 32.0
-		temp_f = temp_f + 2 #calibration
+		temp_f = temp_f + 1 #calibration
 		return temp_f
 
 def SetStatusTemp(): 
@@ -128,20 +128,25 @@ def CheckTimer():
         return 0
 
 def Heartbeat():
-        s = str(datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S') + " \t " + "HVAC STAUS: " + str(HVAC_STATUS) + " \t " + "TEMP STATUS: " + str(TEMP_STATUS) + " \t " + "TEMP: " + str(TEMP) + " \t " + " TIMER: " + str(TIMER))
+        t = str(datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+        s = str(t + " \t " + "HVAC STAUS: " + str(HVAC_STATUS) + " \t " + "TEMP STATUS: " + str(TEMP_STATUS) + " \t " + "TEMP: " + str(TEMP) + " \t " + " TIMER: " + str(TIMER))
         print(s)
         if(TIMER % 100 == 0):
                 try:
                         TWEET.update_status(status = s)
                 except:
-                        print("********** TWEET FAILED **********")
+                        print(t + " ********** TWEET FAILED **********")
         temp = not HEARTBEAT
         GPIO.output(PIN_STATUS_LED, HEARTBEAT)
         return temp
 
 def Hello():
-        print("********** HVAC STARTED **********")
-        TWEET.update_status(status = "********** HVAC STARTED **********")
+        t = str(datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+        print(t + " ********** HVAC STARTED **********")
+        try:
+                TWEET.update_status(status = t + " ********** HVAC STARTED **********")
+        except:
+                print(t + " ********** TWEET FAILED **********")
 
 #===========================================================================================
 #main
