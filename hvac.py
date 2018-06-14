@@ -26,7 +26,7 @@ GPIO.setup(PIN_HEAT_LED, GPIO.OUT)
 GPIO.setup(PIN_HEAT, GPIO.OUT)
 
 #===========================================================================================
-#definitions
+#vars
 
 STATUS_TEMP = "idle"
 STATUS_HVAC = "idle"
@@ -39,10 +39,10 @@ TEMP = 70
 TEMP_SETTING_COOL = 75
 TEMP_SETTING_HEAT = 68
 
-COOLDOWN_TIMEOUT = 500
+COOLDOWN_TIMEOUT = 8
 TIMER = 0
-RUNTIME_MAX = 720
-RUNTIME_MIN = 240
+RUNTIME_MAX = 12
+RUNTIME_MIN = 4
 
 ERROR_TEMP_MAX = 85
 ERROR_TEMP_MIN = 50
@@ -87,20 +87,20 @@ def SetStatusHVAC():
         if(STATUS_HVAC == "heat" and STATUS_TEMP == "cool"):
                 return "error"
         if(STATUS_HVAC == "cooldown"):
-                if(TIMER < COOLDOWN_TIMEOUT):
+                if(TIMER < COOLDOWN_TIMEOUT * 60):
                         return "cooldown"
         if(STATUS_HVAC == "cool"):
-                if(TIMER < RUNTIME_MIN):
+                if(TIMER < RUNTIME_MIN * 60):
                         return "cool"
-                if(TIMER > RUNTIME_MAX):
+                if(TIMER > RUNTIME_MAX * 60):
                         return "cooldown"
                 if(TEMP > TEMP_SETTING_COOL):
                         return "cool"
                 return "cooldown"
         if(STATUS_HVAC == "heat"):
-                if(TIMER < RUNTIME_MIN):
+                if(TIMER < RUNTIME_MIN * 60):
                         return "heat"
-                if(TIMER > RUNTIME_MAX):
+                if(TIMER > RUNTIME_MAX * 60):
                         return "cooldown"
                 if(TEMP < TEMP_SETTING_HEAT):
                         return "heat"
@@ -144,15 +144,29 @@ def GetConfig():
         global HVAC_HEAT
         global TEMP_SETTING_COOL
         global TEMP_SETTING_HEAT
+        global COOLDOWN_TIMEOUT
+        global RUNTIME_MAX
+        global RUNTIME_MIN
+
         try:
                 log = open("/ramtmp/hvac.config","r")
                 HVAC_COOL = log.readline().rstrip('\r\n')
                 HVAC_HEAT = log.readline().rstrip('\r\n')
                 TEMP_SETTING_COOL = int(log.readline().rstrip('\r\n'))
                 TEMP_SETTING_HEAT = int(log.readline().rstrip('\r\n'))
+                COOLDOWN_TIMEOUT = int(log.readline().rstrip('\r\n'))
+                RUNTIME_MAX = int(log.readline().rstrip('\r\n'))
+                RUNTIME_MIN = int(log.readline().rstrip('\r\n'))
                 log.close()
         except:
                 print(" ********** READ CONFIG FAILED **********")
+                HVAC_COOL = "on"
+                HVAC_HEAT = "on"
+                TEMP_SETTING_COOL = 75
+                TEMP_SETTING_HEAT = 68
+                COOLDOWN_TIMEOUT = 8
+                RUNTIME_MAX = 12
+                RUNTIME_MIN = 4
 
 def Heartbeat():
         s = str("CFG: " + str(HVAC_COOL) + " " + str(HVAC_HEAT) + "\t HVAC: " + str(STATUS_HVAC) + "\t THRM: " + str(STATUS_TEMP) + "\t f: " + str(TEMP) + "\t TICK: " + str(TIMER))

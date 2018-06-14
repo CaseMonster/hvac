@@ -13,8 +13,8 @@ from weather import Weather
 
 CONSUMER_KEY = 'vODk25RpPIMGkdwNG5aDTSHf7'
 CONSUMER_SECRET = 'DDpHqywyPvEkUflnIaxyRCkQIW5GQodVUtZemaDwLUE1SY7mF3'
-ACCESS_KEY = '929544340061478912-wQby3MaYsrokOv4Hw9cz5zqDbxcsNr0'
-ACCESS_SECRET = 'B3CJVhYhp8lZGX6U0cKxvQHGAvoIwYn13KmpLU6chjy0C'
+ACCESS_KEY = '929544340061478912-UwuRBEn4mWl4X8V5M7M7lk9Jlysc8xn'
+ACCESS_SECRET = 'RTYlSugO6BUMHf6q1BLcmAgVOv4BrnJgV2z0Lgu559UwP'
 TWEET = Twython(CONSUMER_KEY,CONSUMER_SECRET,ACCESS_KEY,ACCESS_SECRET) 
 
 #===========================================================================================
@@ -25,11 +25,17 @@ HVAC_TEMP_CAL = 0
 HVAC_STATUS = "initializing"
 
 HVAC_COOL = "off"
-HVAC_HEAT = "on"
+HVAC_HEAT = "off"
 HVAC_AUTO = "off"
 
 TEMP_SETTING_COOL = 75
 TEMP_SETTING_HEAT = 68
+TEMP_SEETING_COOL_AWAY = 80
+TEMP_SETTING_HEAT_AWAY = 60
+
+COOLDOWN_TIMEOUT = 8
+RUNTIME_MAX = 12
+RUNTIME_MIN = 4
 
 SECURITY_IPC = "blank"
         
@@ -62,6 +68,7 @@ class GUI(QtGui.QWidget):
 
         #font setup
         font_main = QtGui.QFont("Segoe UI", 14)
+        font_small = QtGui.QFont("Segoe UI", 24, QtGui.QFont.Bold)
         font_med = QtGui.QFont("Segoe UI", 36, QtGui.QFont.Bold)
         font_large = QtGui.QFont("Segoe UI", 72, QtGui.QFont.Bold)
         font_xlarge = QtGui.QFont("Segoe UI", 200, QtGui.QFont.Bold) 
@@ -246,59 +253,142 @@ class GUI(QtGui.QWidget):
         self.settings_title.setFont(font_med)
         self.settings_title.hide()
 
-        self.hvac_cool = QtGui.QPushButton('A/C On/Off', self)
+        self.hvac_auto = QtGui.QPushButton('Automatic', self)
+        self.hvac_auto.clicked.connect(lambda:self.SetAuto())
+        self.hvac_auto.move(25, 125)
+        self.hvac_auto.setFixedSize(350, 50)
+        self.hvac_auto.setFont(font_small)
+        self.hvac_auto.setStyleSheet("QPushButton { color : default; }");
+        self.hvac_auto.hide()
+
+        self.hvac_cool = QtGui.QPushButton('A/C', self)
         self.hvac_cool.clicked.connect(lambda:self.SetCool())
-        self.hvac_cool.move(25, 125)
-        self.hvac_cool.setFixedSize(300, 100)
-        self.hvac_cool.setFont(font_med)
-        self.hvac_cool.setStyleSheet("QPushButton { color : blue; }");
+        self.hvac_cool.move(25, 200)
+        self.hvac_cool.setFixedSize(150, 50)
+        self.hvac_cool.setFont(font_small)
+        self.hvac_cool.setStyleSheet("QPushButton { color : default; }");
         self.hvac_cool.hide()
 
-        self.hvac_heat = QtGui.QPushButton('Heat On/Off', self)
+        self.hvac_heat = QtGui.QPushButton('Heat', self)
         self.hvac_heat.clicked.connect(lambda:self.SetHeat())
-        self.hvac_heat.move(25, 250)
-        self.hvac_heat.setFixedSize(300, 100)
-        self.hvac_heat.setFont(font_med)
-        self.hvac_heat.setStyleSheet("QPushButton { color : red; }");
+        self.hvac_heat.move(25, 275)
+        self.hvac_heat.setFixedSize(150, 50)
+        self.hvac_heat.setFont(font_small)
+        self.hvac_heat.setStyleSheet("QPushButton { color : default; }");
         self.hvac_heat.hide()
 
         self.hvac_setting_cool = QtGui.QLabel(str(TEMP_SETTING_COOL), self)
-        self.hvac_setting_cool.move(525, 110)
-        self.hvac_setting_cool.setFont(font_large)
+        self.hvac_setting_cool.move(262, 185)
+        self.hvac_setting_cool.setFont(font_med)
         self.hvac_setting_cool.hide()
         
         self.hvac_cool_up = QtGui.QPushButton('+', self)
         self.hvac_cool_up.clicked.connect(lambda:self.SetCoolUp())
-        self.hvac_cool_up.move(400, 125)
-        self.hvac_cool_up.setFixedSize(100, 100)
-        self.hvac_cool_up.setFont(font_med)
+        self.hvac_cool_up.move(200, 200)
+        self.hvac_cool_up.setFixedSize(50, 50)
+        self.hvac_cool_up.setFont(font_small)
         self.hvac_cool_up.hide()
 
         self.hvac_cool_dn = QtGui.QPushButton('-', self)
         self.hvac_cool_dn.clicked.connect(lambda:self.SetCoolDn())
-        self.hvac_cool_dn.move(650, 125)
-        self.hvac_cool_dn.setFixedSize(100, 100)
-        self.hvac_cool_dn.setFont(font_med)
+        self.hvac_cool_dn.move(325, 200)
+        self.hvac_cool_dn.setFixedSize(50, 50)
+        self.hvac_cool_dn.setFont(font_small)
         self.hvac_cool_dn.hide()
 
         self.hvac_setting_heat = QtGui.QLabel(str(TEMP_SETTING_HEAT), self)
-        self.hvac_setting_heat.move(525, 235)
-        self.hvac_setting_heat.setFont(font_large)
+        self.hvac_setting_heat.move(262, 260)
+        self.hvac_setting_heat.setFont(font_med)
         self.hvac_setting_heat.hide()
 
         self.hvac_heat_up = QtGui.QPushButton('+', self)
         self.hvac_heat_up.clicked.connect(lambda:self.SetHeatUp())
-        self.hvac_heat_up.move(400, 250)
-        self.hvac_heat_up.setFixedSize(100, 100)
-        self.hvac_heat_up.setFont(font_med)
+        self.hvac_heat_up.move(200, 275)
+        self.hvac_heat_up.setFixedSize(50, 50)
+        self.hvac_heat_up.setFont(font_small)
         self.hvac_heat_up.hide()
 
         self.hvac_heat_dn = QtGui.QPushButton('-', self)
         self.hvac_heat_dn.clicked.connect(lambda:self.SetHeatDn())
-        self.hvac_heat_dn.move(650, 250)
-        self.hvac_heat_dn.setFixedSize(100, 100)
-        self.hvac_heat_dn.setFont(font_med)
+        self.hvac_heat_dn.move(325, 275)
+        self.hvac_heat_dn.setFixedSize(50, 50)
+        self.hvac_heat_dn.setFont(font_small)
         self.hvac_heat_dn.hide()
+
+        self.hvac_cooldown_label = QtGui.QLabel('Cooldown Time', self)
+        self.hvac_cooldown_label.move(425, 125)
+        self.hvac_cooldown_label.setFixedSize(150, 50)
+        self.hvac_cooldown_label.setFont(font_small)
+        self.hvac_cooldown_label.hide()
+
+        self.hvac_cooldown = QtGui.QLabel(str(COOLDOWN_TIMEOUT), self)
+        self.hvac_cooldown.move(662, 110)
+        self.hvac_cooldown.setFont(font_med)
+        self.hvac_cooldown.hide()
+
+        self.hvac_cooldown_up = QtGui.QPushButton('+', self)
+        self.hvac_cooldown_up.clicked.connect(lambda:self.SetCooldownUp())
+        self.hvac_cooldown_up.move(600, 125)
+        self.hvac_cooldown_up.setFixedSize(50, 50)
+        self.hvac_cooldown_up.setFont(font_small)
+        self.hvac_cooldown_up.hide()
+
+        self.hvac_cooldown_dn = QtGui.QPushButton('-', self)
+        self.hvac_cooldown_dn.clicked.connect(lambda:self.SetCooldownDn())
+        self.hvac_cooldown_dn.move(725, 125)
+        self.hvac_cooldown_dn.setFixedSize(50, 50)
+        self.hvac_cooldown_dn.setFont(font_small)
+        self.hvac_cooldown_dn.hide()
+
+        self.hvac_runtime_max_label = QtGui.QLabel('Max Runtime', self)
+        self.hvac_runtime_max_label.move(425, 200)
+        self.hvac_runtime_max_label.setFixedSize(150, 50)
+        self.hvac_runtime_max_label.setFont(font_small)
+        self.hvac_runtime_max_label.hide()
+
+        self.hvac_runtime_max = QtGui.QLabel(str(RUNTIME_MAX), self)
+        self.hvac_runtime_max.move(662, 185)
+        self.hvac_runtime_max.setFont(font_med)
+        self.hvac_runtime_max.hide()
+
+        self.hvac_runtime_max_up = QtGui.QPushButton('+', self)
+        self.hvac_runtime_max_up.clicked.connect(lambda:self.SetRuntimeMaxUp())
+        self.hvac_runtime_max_up.move(600, 200)
+        self.hvac_runtime_max_up.setFixedSize(50, 50)
+        self.hvac_runtime_max_up.setFont(font_small)
+        self.hvac_runtime_max_up.hide()
+
+        self.hvac_runtime_max_dn = QtGui.QPushButton('-', self)
+        self.hvac_runtime_max_dn.clicked.connect(lambda:self.SetRuntimeMaxDn())
+        self.hvac_runtime_max_dn.move(725, 200)
+        self.hvac_runtime_max_dn.setFixedSize(50, 50)
+        self.hvac_runtime_max_dn.setFont(font_small)
+        self.hvac_runtime_max_dn.hide()
+
+        self.hvac_runtime_min_label = QtGui.QLabel('Min Runtime', self)
+        self.hvac_runtime_min_label.move(425, 275)
+        self.hvac_runtime_min_label.setFixedSize(150, 50)
+        self.hvac_runtime_min_label.setFont(font_small)
+        self.hvac_runtime_min_label.hide()
+
+        self.hvac_runtime_min = QtGui.QLabel(str(RUNTIME_MIN), self)
+        self.hvac_runtime_min.move(662, 260)
+        self.hvac_runtime_min.setFont(font_med)
+        self.hvac_runtime_min.hide()
+
+        self.hvac_runtime_min_up = QtGui.QPushButton('+', self)
+        self.hvac_runtime_min_up.clicked.connect(lambda:self.SetRuntimeMinUp())
+        self.hvac_runtime_min_up.move(600, 275)
+        self.hvac_runtime_min_up.setFixedSize(50, 50)
+        self.hvac_runtime_min_up.setFont(font_small)
+        self.hvac_runtime_min_up.hide()
+
+        self.hvac_runtime_min_dn = QtGui.QPushButton('-', self)
+        self.hvac_runtime_min_dn.clicked.connect(lambda:self.SetRuntimeMinDn())
+        self.hvac_runtime_min_dn.move(725, 275)
+        self.hvac_runtime_min_dn.setFixedSize(50, 50)
+        self.hvac_runtime_min_dn.setFont(font_small)
+        self.hvac_runtime_min_dn.hide()
 
         #security window
 
@@ -442,6 +532,7 @@ class GUI(QtGui.QWidget):
         self.HideSecurity()
         self.HideLog()
         self.settings_title.show()
+        self.hvac_auto.show()
         self.hvac_setting_cool.show()
         self.hvac_cool.show()
         self.hvac_cool_up.show()
@@ -450,9 +541,22 @@ class GUI(QtGui.QWidget):
         self.hvac_heat.show()
         self.hvac_heat_up.show()
         self.hvac_heat_dn.show()
-
+        self.hvac_cooldown_label.show()
+        self.hvac_cooldown.show()
+        self.hvac_cooldown_up.show()
+        self.hvac_cooldown_dn.show()
+        self.hvac_runtime_max_label.show()
+        self.hvac_runtime_max.show()
+        self.hvac_runtime_max_up.show()
+        self.hvac_runtime_max_dn.show()
+        self.hvac_runtime_min_label.show()
+        self.hvac_runtime_min.show()
+        self.hvac_runtime_min_up.show()
+        self.hvac_runtime_min_dn.show()
+        
     def HideSettings(self):
         self.settings_title.hide()
+        self.hvac_auto.hide()
         self.hvac_setting_cool.hide()
         self.hvac_cool.hide()
         self.hvac_cool_up.hide()
@@ -461,6 +565,18 @@ class GUI(QtGui.QWidget):
         self.hvac_heat.hide()
         self.hvac_heat_up.hide()
         self.hvac_heat_dn.hide()
+        self.hvac_cooldown_label.hide()
+        self.hvac_cooldown.hide()
+        self.hvac_cooldown_up.hide()
+        self.hvac_cooldown_dn.hide()
+        self.hvac_runtime_max_label.hide()
+        self.hvac_runtime_max.hide()
+        self.hvac_runtime_max_up.hide()
+        self.hvac_runtime_max_dn.hide()
+        self.hvac_runtime_min_label.hide()
+        self.hvac_runtime_min.hide()
+        self.hvac_runtime_min_up.hide()
+        self.hvac_runtime_min_dn.hide()
 
     def ShowSecurity(self):
         self.HideMain()
@@ -504,11 +620,19 @@ class GUI(QtGui.QWidget):
 
     def SetAuto(self):
         global HVAC_AUTO
+        global HVAC_COOL
+        global HVAC_HEAT
         if (HVAC_AUTO == "on"):
             HVAC_AUTO = "off"
+            self.hvac_cool.setStyleSheet("QPushButton { color : default; }");
         else:
             HVAC_AUTO = "on"
-        self.hvac_auto_setting.setText(HVAC_AUTO)
+            HVAC_COOL = "off"
+            HVAC_HEAT = "off"
+            self.hvac_auto_setting.setText(HVAC_AUTO)
+            self.hvac_cool.setStyleSheet("QPushButton { color : green; }");
+            self.hvac_cool.setStyleSheet("QPushButton { color : default; }");
+            self.hvac_heat.setStyleSheet("QPushButton { color : default; }");
 
     def SetCool(self):
         global HVAC_COOL
@@ -558,6 +682,41 @@ class GUI(QtGui.QWidget):
         TEMP_SETTING_HEAT = TEMP_SETTING_HEAT - 1
         self.hvac_setting_heat.setText(str(TEMP_SETTING_HEAT))
 
+    def SetCooldownUp(self):
+        global COOLDOWN_TIMEOUT
+        COOLDOWN_TIMEOUT = COOLDOWN_TIMEOUT + 1
+        self.hvac_cooldown.setText(str(COOLDOWN_TIMEOUT))
+
+    def SetCooldownDn(self):
+        global COOLDOWN_TIMEOUT
+        if not(COOLDOWN_TIMEOUT < 5):
+            COOLDOWN_TIMEOUT = COOLDOWN_TIMEOUT - 1
+        self.hvac_cooldown.setText(str(COOLDOWN_TIMEOUT))
+
+    def SetRuntimeMaxUp(self):
+        global RUNTIME_MAX
+        if not(RUNTIME_MAX > 14):
+            RUNTIME_MAX = RUNTIME_MAX + 1
+        self.hvac_runtime_max.setText(str(RUNTIME_MAX))
+
+    def SetRuntimeMaxDn(self):
+        global RUNTIME_MAX
+        if not(RUNTIME_MAX < 11):
+            RUNTIME_MAX = RUNTIME_MAX - 1
+        self.hvac_runtime_max.setText(str(RUNTIME_MAX))
+
+    def SetRuntimeMinUp(self):
+        global RUNTIME_MIN
+        if not(RUNTIME_MIN > 5):
+            RUNTIME_MIN = RUNTIME_MIN + 1
+        self.hvac_runtime_min.setText(str(RUNTIME_MIN))
+
+    def SetRuntimeMinDn(self):
+        global RUNTIME_MIN
+        if not(RUNTIME_MIN < 4):
+            RUNTIME_MIN = RUNTIME_MIN - 1
+        self.hvac_runtime_min.setText(str(RUNTIME_MIN))
+
     #functions for security
 
     def SetIPC1(self):
@@ -586,7 +745,7 @@ class GUI(QtGui.QWidget):
     #functions for log
 
     def LogUpdate(self):
-        print("syslog read")
+        print("LogUpdate")
         #print(sys.stdin.readline())
 
         #self.log_window.setText(sys.stdin.readline())
@@ -600,6 +759,9 @@ class GUI(QtGui.QWidget):
             log.write(str(HVAC_HEAT) + "\n")
             log.write(str(TEMP_SETTING_COOL) + "\n")
             log.write(str(TEMP_SETTING_HEAT) + "\n")
+            log.write(str(COOLDOWN_TIMEOUT) + "\n")
+            log.write(str(RUNTIME_MAX) + "\n")
+            log.write(str(RUNTIME_MIN) + "\n")
             log.close()
         except:
             print(" ********** WRITE FAILED **********")
@@ -630,7 +792,7 @@ class GUI(QtGui.QWidget):
         global HVAC_STATUS
         global HVAC_TEMP
         t = str(datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
-        s = str(t + "\t CFG: " + str(HVAC_COOL) + " " + str(HVAC_HEAT) + "\t HVAC: " + str(HVAC_STATUS) + "\t THRM: " + str(HVAC_TEMP))
+        s = str(t + "\t cfg: " + str(HVAC_COOL) + " " + str(HVAC_HEAT) + " status:" + str(HVAC_STATUS) + " therm:" + str(HVAC_TEMP))
         try:
             TWEET.update_status(status = s)
             print(t + " ********** TWEET        **********")
@@ -643,7 +805,7 @@ class GUI(QtGui.QWidget):
         global HVAC_STATUS
         global HVAC_TEMP
         t = str(datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
-        s = str(t + "\t CFG: " + str(HVAC_COOL) + " " + str(HVAC_HEAT) + "\t HVAC: " + str(HVAC_STATUS) + "\t THRM: " + str(HVAC_TEMP))
+        s = str(t + "\t cfg: " + str(HVAC_COOL) + " " + str(HVAC_HEAT) + " status:" + str(HVAC_STATUS) + " therm:" + str(HVAC_TEMP))
         print(s)
 
     def UpdateWeather(self):
