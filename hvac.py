@@ -162,8 +162,8 @@ def GetConfig():
                 print(" ********** READ CONFIG FAILED **********")
                 HVAC_COOL = "on"
                 HVAC_HEAT = "on"
-                TEMP_SETTING_COOL = 75
-                TEMP_SETTING_HEAT = 68
+                TEMP_SETTING_COOL = 80
+                TEMP_SETTING_HEAT = 60
                 COOLDOWN_TIMEOUT = 8
                 RUNTIME_MAX = 12
                 RUNTIME_MIN = 4
