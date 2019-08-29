@@ -404,7 +404,7 @@ class GUI(QtGui.QWidget):
 
         self.security_instance = vlc.Instance()
         self.security_player = self.security_instance.media_player_new()
-        self.security_media = self.security_instance.media_new('rtsp://pi:Remotepi123@192.168.1.200/Streaming/Channels/102')
+        self.security_media = self.security_instance.media_new('rtsp://pi:Remotepi123@10.0.10.100/Streaming/Channels/102')
         self.security_media.get_mrl()
         self.security_player.set_media(self.security_media)
         self.security_player.set_xwindow(self.security_video.winId())
@@ -720,19 +720,19 @@ class GUI(QtGui.QWidget):
     #functions for security
 
     def SetIPC1(self):
-        self.security_media = self.security_instance.media_new('rtsp://pi:Remotepi123@192.168.1.200/Streaming/Channels/102')
+        self.security_media = self.security_instance.media_new('rtsp://pi:Remotepi123@10.0.10.100/Streaming/Channels/102')
         self.RestartVideo()
 
     def SetIPC2(self):
-        self.security_media = self.security_instance.media_new('rtsp://pi:Remotepi123@192.168.1.200/Streaming/Channels/202')
+        self.security_media = self.security_instance.media_new('rtsp://pi:Remotepi123@10.0.10.100/Streaming/Channels/202')
         self.RestartVideo()
 
     def SetIPC3(self):
-        self.security_media = self.security_instance.media_new('rtsp://pi:Remotepi123@192.168.1.200/Streaming/Channels/302')
+        self.security_media = self.security_instance.media_new('rtsp://pi:Remotepi123@10.0.10.100/Streaming/Channels/302')
         self.RestartVideo()
 
     def SetIPC4(self):
-        self.security_media = self.security_instance.media_new('rtsp://pi:Remotepi123@192.168.1.200/Streaming/Channels/402')
+        self.security_media = self.security_instance.media_new('rtsp://pi:Remotepi123@10.0.10.100/Streaming/Channels/402')
         self.RestartVideo()
     
     def RestartVideo(self):
@@ -791,7 +791,7 @@ class GUI(QtGui.QWidget):
         global HVAC_HEAT
         global HVAC_STATUS
         global HVAC_TEMP
-        t = str(datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+        t = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         s = str(t + "\t cfg: " + str(HVAC_COOL) + " " + str(HVAC_HEAT) + " status:" + str(HVAC_STATUS) + " therm:" + str(HVAC_TEMP))
         try:
             TWEET.update_status(status = s)

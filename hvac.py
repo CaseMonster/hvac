@@ -32,8 +32,8 @@ STATUS_TEMP = "idle"
 STATUS_HVAC = "idle"
 STATUS_OLD = "idle"
 
-HVAC_COOL = "on"
-HVAC_HEAT = "on"
+HVAC_COOL = "off"
+HVAC_HEAT = "off"
 
 TEMP = 70
 TEMP_SETTING_COOL = 75
@@ -45,7 +45,7 @@ RUNTIME_MAX = 12
 RUNTIME_MIN = 4
 
 ERROR_TEMP_MAX = 85
-ERROR_TEMP_MIN = 50
+ERROR_TEMP_MIN = 45
 HEARTBEAT = True
 
 #===========================================================================================
@@ -160,13 +160,6 @@ def GetConfig():
                 log.close()
         except:
                 print(" ********** READ CONFIG FAILED **********")
-                HVAC_COOL = "on"
-                HVAC_HEAT = "on"
-                TEMP_SETTING_COOL = 80
-                TEMP_SETTING_HEAT = 60
-                COOLDOWN_TIMEOUT = 8
-                RUNTIME_MAX = 12
-                RUNTIME_MIN = 4
 
 def Heartbeat():
         s = str("CFG: " + str(HVAC_COOL) + " " + str(HVAC_HEAT) + "\t HVAC: " + str(STATUS_HVAC) + "\t THRM: " + str(STATUS_TEMP) + "\t f: " + str(TEMP) + "\t TICK: " + str(TIMER))
